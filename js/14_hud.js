@@ -72,6 +72,10 @@ function drawHUD() {
   ctx.font = '13px system-ui,sans-serif';
   ctx.fillStyle = 'rgba(232,238,252,.45)';
   ctx.fillText(muted ? '🔇 M 开启声音' : '🔊 M 静音', padX + 10, H - 16 - SAFE_BOTTOM);
+
+  /* 左下角上面一行：累计访问 / 通关（见 js/17_visit.js）。
+     用 typeof 保护：万一那个文件没加载，HUD 照画不误。 */
+  if (typeof drawVisitCounter === 'function') drawVisitCounter();
 }
 
 
