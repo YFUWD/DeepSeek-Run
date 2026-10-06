@@ -49,7 +49,10 @@ function toggleMute() {
    背景音乐：单曲循环
    ---------------------------------------------------------
    · 就一首（沿用《藤壶的入侵》那首 bgm），从头放到尾接着放
-   · 浏览器不许自动出声，所以第一次点击/按键时（audioUnlock）才真的响
+   · ★ 按下「开始游戏」之后隔 BGM_START_DELAY_MS 才起音乐：
+        一按下去就轰起来太吵，留两秒空拍让人先进入画面。
+        老玩家没有菜单（直接开跑），第一次操作等于开跑，同样倒数这么久。
+   · 浏览器不许自动出声，所以必须等一次用户交互（audioUnlock）
    · 音量走 BGM_VOLUME，比音效轻
 
    ★ 形式是 .m4a（AAC）：iOS / Android / 各浏览器的原生格式，
@@ -59,25 +62,26 @@ function toggleMute() {
    ========================================================= */
 const BGM_LIST = ['audio/bgm.m4a'];
 
-let bgmEl       = null;
-let bgmIdx      = -1;
-let bgmStarted  = false;
+/* 按下「开始游戏」之后隔多久起 BGM（毫秒） */
+const BGM_START_DELAY_MS = 2000;
+
+let bgmEl         = null;
+let bgmStarted    = false;   // 已经真的开始播了
+let bgmDelayTimer = null;    // 倒数中的定时器
 
 function bgmPlay() {
-  if (!bgmEl) return;
+  if (!bgmEl || !bgmEl.src) return;
 
-  /* ★ src 只在第一次设。
-     设了 loop = true 之后再重设 src，会把音乐从头拽回去 ——
-     那样就永远停在开头几秒，听着像卡带。 */
-  if (bgmIdx < 0) {
-    bgmIdx = 0;
-    bgmEl.src = BGM_LIST[bgmIdx];
-  }
-
-  bgmEl.volume = BGM_VOLUME;
+  /* 倒数这两秒里音量滑块 / 静音键可能被动过，播之前重设一次 */
+  bgmEl.volume = bgmVolumeGet();
   bgmEl.muted  = muted;
+
   const p = bgmEl.play();
-  if (p && p.catch) p.catch(() => { /* 还没解锁，等 audioUnlock 再拉起来 */ });
+  if (p && p.catch) {
+    /* 还没解锁（浏览器要求先有用户交互）：不报错、不轰炸重试，
+       把状态清干净，下一次交互时 bgmKick 会重新倒数。 */
+    p.catch(() => { bgmStarted = false; bgmDelayTimer = null; });
+  }
 }
 
 function bgmInit() {
@@ -85,21 +89,44 @@ function bgmInit() {
   bgmEl = new Audio();
   bgmEl.loop    = true;               // 单曲循环
   bgmEl.preload = 'auto';
+  bgmEl.volume  = BGM_VOLUME;         // 存档里的音量稍后由 bgmVolumeBind 套上
+  bgmEl.muted   = muted;
+
+  /* ★ 一进页面就把 src 设上（但不出声）：
+     这样这 1MB 的曲子会趁倒数那两秒先下完，到点直接出声，不用再等缓冲。 */
+  if (BGM_LIST.length) bgmEl.src = BGM_LIST[0];
+
   bgmEl.addEventListener('error', () => {
-    console.warn('[BGM] 加载失败：' + BGM_LIST[bgmIdx >= 0 ? bgmIdx : 0]);
+    console.warn('[BGM] 加载失败：' + BGM_LIST[0]);
   });
-  bgmPlay();
 }
 
-/* 由 audioUnlock 调用：解锁后如果还没响，就拉起来 */
+/* 开始倒数：delayMs 之后起 BGM。
+   重复调用以第一次为准，不会叠出好几个定时器。 */
+function bgmStartCountdown(delayMs) {
+  if (bgmStarted || bgmDelayTimer) return;
+  const d = (typeof delayMs === 'number') ? delayMs : BGM_START_DELAY_MS;
+  bgmDelayTimer = setTimeout(() => {
+    bgmDelayTimer = null;
+    bgmStarted    = true;
+    bgmPlay();
+  }, d);
+}
+
+/* 由 audioUnlock 调用（每次键盘 / 画布交互都会走到）。
+   只有「已经进了游戏」才倒数：
+     · 还在加载界面 / 主菜单里 —— 不算开始，别把 BGM 提前拉起来
+     · 老玩家没有菜单，第一次操作时 state 已经是 playing，就该倒数 */
 function bgmKick() {
-  if (!bgmEl) { bgmInit(); return; }
-  if (bgmStarted) return;
-  const p = bgmEl.play();
-  if (p && p.then) p.then(() => { bgmStarted = true; }).catch(() => {});
+  if (!bgmEl) bgmInit();
+  if (bgmStarted || bgmDelayTimer) return;
+
+  const load = document.getElementById('loadOverlay');
+  if (load && !load.classList.contains('hidden')) return;   // 素材还没加载完
+  if (state === 'playing' || state === 'intro') bgmStartCountdown();
 }
 
-/* 页面加载完就选一首（此时多半是静音的，等交互后才响） */
+/* 页面一进来就把 Audio 建好、开始下载，但不出声 */
 bgmInit();
 
 
