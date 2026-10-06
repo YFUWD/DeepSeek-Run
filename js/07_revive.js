@@ -41,28 +41,52 @@ const btnAdRevive = document.getElementById('btnAdRevive');
 const adHintEl    = document.getElementById('adHint');
 const adLink      = document.getElementById('adLink');
 
+let adShownIdx = -1;
+
+/* 把广告图画进弹窗。
+   图片还没到位就显示「加载中…」——
+   以前这里不管三七二十一都写「加载失败」，其实只是手机上网慢还没下完，
+   白吓人一跳。只有真的 onerror（图挂了）才说失败。 */
+function adPaint(idx) {
+  const src = AD_IMAGES[idx];
+  const img = AD_IMGS[idx];
+  const ready = img && !img._fail && img.complete && img.naturalWidth > 0;
+
+  if (ready) {
+    adImageBox.style.backgroundImage = `url(${src})`;
+    adImageBox.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
+    adImageLabel.style.display = 'none';
+    return;
+  }
+
+  adImageBox.style.backgroundImage = 'none';
+  adImageBox.style.aspectRatio = '';
+  adImageLabel.style.display = 'block';
+  adImageLabel.textContent = (img && img._fail) ? `广告图片 ${idx + 1} 加载失败` : '加载中…';
+}
+
+/* 图还没到时挂一次钩子：到了就补画一遍。
+   以前只判断一次，图后面加载好了也不会重画，
+   于是整个 5 秒都挂着「加载失败」。 */
+function adHookImage(idx) {
+  const img = AD_IMGS[idx];
+  if (!img || img._hooked) return;
+  img._hooked = true;
+  const again = () => { if (state === 'ad' && adShownIdx === idx) adPaint(idx); };
+  img.addEventListener('load',  again);
+  img.addEventListener('error', again);
+}
+
 function showAd() {
   state   = 'ad';
   adTimer = AD_SECONDS * 60;
 
   const idx = Math.floor(Math.random() * AD_IMAGES.length);
-  const img = AD_IMGS[idx];
+  adShownIdx = idx;
 
-  if (img && !img._fail && img.complete && img.naturalWidth > 0) {
-    adImageBox.style.backgroundImage = `url(${AD_IMAGES[idx]})`;
-    adImageBox.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
-    adImageLabel.style.display = 'none';
-  } else if (AD_IMAGES[idx]) {
-    adImageBox.style.backgroundImage = 'none';
-    adImageBox.style.aspectRatio = '';
-    adImageLabel.style.display = 'block';
-    adImageLabel.textContent = `广告图片 ${idx + 1} 加载失败`;
-  } else {
-    adImageBox.style.backgroundImage = 'none';
-    adImageBox.style.aspectRatio = '';
-    adImageLabel.style.display = 'block';
-    adImageLabel.textContent = `广告图片 ${idx + 1}`;
-  }
+  ensureAdImage(idx);   // 第一次弹广告时才真的去下这张（首屏少下约 2MB）
+  adHookImage(idx);
+  adPaint(idx);
 
   if (adLink) {
     const url = (typeof AD_LINKS !== 'undefined' && AD_LINKS[idx]) || '';

@@ -31,6 +31,17 @@
 <body>
 <canvas id="c"></canvas>
 
+<!-- 加载界面：素材没到位就不放行进游戏。
+     手机上素材是好几 MB，不挡一下的话开局看到的全是程序画的色块。
+     进度条宽度由 js/03_assets.js 的 updateLoadUI() 写进来。 -->
+<div id="loadOverlay">
+  <div class="loadPanel">
+    <div class="loadTitle">鲸鲸酷跑</div>
+    <div class="loadTrack"><div id="loadBar" class="loadBar"></div></div>
+    <div id="loadText" class="loadText">素材加载中…</div>
+  </div>
+</div>
+
 <!-- 竖屏时的「横屏」按钮：点一下进入全屏并尝试锁定横屏。
      iOS Safari 不支持屏幕方向锁定，那种情况会退化成「全屏后请你手动横过来」。 -->
 <button id="rotateBtn" class="hidden" type="button" aria-label="横屏游玩">⟳ 横屏</button>
@@ -215,12 +226,12 @@
     <div class="shopBody">
       <div class="shopItem" id="itemPot">
         <div class="shopIcon shopIconPot"></div>
-        <div class="shopPrice"><span class="coinDot"></span><span>50</span></div>
+        <div class="shopPrice"><span class="coinDot"></span><span>25</span></div>
         <div class="shopOwned">拥有 <b id="potOwned">0</b></div>
       </div>
       <div class="shopItem" id="itemRice">
         <div class="shopIcon shopIconRice"></div>
-        <div class="shopPrice"><span class="coinDot"></span><span>1000</span></div>
+        <div class="shopPrice"><span class="coinDot"></span><span>300</span></div>
         <div class="shopOwned">拥有 <b id="riceOwned">0</b></div>
       </div>
     </div>
@@ -232,7 +243,7 @@
 <div id="buyOverlay" class="hidden">
   <div class="buyPanel">
     <h3 id="buyTitle">铁盆</h3>
-    <div class="buyPriceRow"><span class="coinDot"></span><span id="buyPrice">50</span></div>
+    <div class="buyPriceRow"><span class="coinDot"></span><span id="buyPrice">25</span></div>
     <div id="buyMsg" class="buyMsg"></div>
     <div class="btnRow">
       <button id="btnBuyCancel">取消</button>
@@ -246,7 +257,7 @@
   <div class="adPanel">
     <button id="btnRiceClose2" class="shopClose" aria-label="关闭">×</button>
     <h1 class="victoryTitle">游戏胜利！</h1>
-    <div id="riceImageBox"><span id="riceImageLabel">大肥鱼图片（素材插入位置）</span></div>
+    <div id="riceImageBox"><span id="riceImageLabel">加载中…</span></div>
     <h2 class="riceTitle">大肥鱼成功吃到了白饭！！！</h2>
     <button id="btnRiceContinue">继 续 游 戏</button>
   </div>
@@ -257,7 +268,7 @@
 <!-- 广告界面 -->
 <div id="adOverlay" class="hidden">
   <div class="adPanel">
-    <div id="adImageBox"><span id="adImageLabel">广告图片</span></div>
+    <div id="adImageBox"><span id="adImageLabel">加载中…</span></div>
     <a id="adLink" class="adLink hidden" target="_blank" rel="noopener noreferrer">
       了解更多 →
     </a>

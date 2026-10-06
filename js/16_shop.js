@@ -154,15 +154,15 @@ function confirmBuy() {
 /* =========================================================
    白饭成功界面
    ========================================================= */
-function showRiceOverlay() {
-  if (!riceOverlay) return;
+/* 把胜利 CG 画到白饭弹窗里。
+   图片没到位就显示「加载中…」—— 以前这里会露出
+   「大肥鱼图片（素材插入位置）」这句开发时的备注，成品里不该出现。 */
+function ricePaint() {
+  const has = (typeof RICE_IMG !== 'undefined') && RICE_IMG;
+  const ready = has && !RICE_IMG._none && !RICE_IMG._fail &&
+                RICE_IMG.complete && RICE_IMG.naturalWidth > 0;
 
-  /* 买白饭 = 通关胜利，放 victory 音效（开头空白已在生成时剪掉） */
-  SFX.victory();
-
-  if (typeof RICE_IMG !== 'undefined' &&
-      RICE_IMG && !RICE_IMG._none && !RICE_IMG._fail &&
-      RICE_IMG.complete && RICE_IMG.naturalWidth > 0) {
+  if (ready) {
     riceImageBox.style.backgroundImage = `url(${RICE_IMAGE})`;
     riceImageBox.style.aspectRatio = RICE_IMG.naturalWidth + ' / ' + RICE_IMG.naturalHeight;
     riceImageLabel.style.display = 'none';
@@ -170,9 +170,26 @@ function showRiceOverlay() {
     riceImageBox.style.backgroundImage = 'none';
     riceImageBox.style.aspectRatio = '';
     riceImageLabel.style.display = 'block';
-    riceImageLabel.textContent = '大肥鱼图片（素材插入位置）';
+    riceImageLabel.textContent = (has && RICE_IMG._fail) ? '胜利 CG 加载失败' : '加载中…';
   }
+}
 
+/* CG 晚一步加载好的话，补画一次（弹窗开着才有意义） */
+if (typeof RICE_IMG !== 'undefined') {
+  const riceAgain = () => {
+    if (riceOverlay && !riceOverlay.classList.contains('hidden')) ricePaint();
+  };
+  RICE_IMG.addEventListener('load',  riceAgain);
+  RICE_IMG.addEventListener('error', riceAgain);
+}
+
+function showRiceOverlay() {
+  if (!riceOverlay) return;
+
+  /* 买白饭 = 通关胜利，放 victory 音效（开头空白已在生成时剪掉） */
+  SFX.victory();
+
+  ricePaint();
   riceOverlay.classList.remove('hidden');
 }
 

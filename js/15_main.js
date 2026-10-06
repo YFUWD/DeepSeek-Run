@@ -296,10 +296,21 @@ reset();
 loadAssets();
 setTimeout(reportAssets, 1500);
 
-if (typeof isFirstPlay === 'function' && isFirstPlay()) {
-  showMenu();
-} else {
-  state = 'playing';
-}
+/* 素材就绪之后才开跑。
+   主循环故意不在这里启动：加载界面是纯 DOM 画的，用不着画布；
+   要是先把循环跑起来，玩家在加载界面背后就已经开始跑了，
+   等挡板一撤成绩都记上了。
+   手机上网慢时这一步最关键 —— 不等的话开局前十几秒
+   看到的全是程序画的色块，看着就像「素材加载坏了」。 */
+whenAssetsReady(() => {
+  hideLoadOverlay();
 
-requestAnimationFrame(loop);
+  if (typeof isFirstPlay === 'function' && isFirstPlay()) {
+    showMenu();
+  } else {
+    state = 'playing';
+  }
+
+  lastT = 0;                            // 别把等素材那段时间算成一大帧
+  requestAnimationFrame(loop);
+});

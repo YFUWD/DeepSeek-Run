@@ -58,6 +58,47 @@ canvas {
 .hidden { display: none !important; }
 
 /* =========================================================
+   加载界面
+   ---------------------------------------------------------
+   素材没加载完就把整个画面盖住。
+   手机上素材是好几 MB，不挡一下的话开局看到的全是程序画的
+   色块和占位图 —— 看起来就像「素材加载失败了」。
+   进度由 js/03_assets.js 的 updateLoadUI() 写进 #loadBar 的宽度。
+   z-index 必须压过菜单(50)和其它所有弹窗。
+   ========================================================= */
+#loadOverlay {
+  position: fixed; inset: 0;
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(#4f9fd4, #8ec9e8 55%, #1b3a5c);
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #fff;
+  padding: 24px;
+}
+.loadPanel { width: min(78vw, 320px); text-align: center; }
+.loadTitle {
+  font-size: 26px; font-weight: 800; letter-spacing: 6px;
+  margin-bottom: 18px;
+  text-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+.loadTrack {
+  height: 8px; border-radius: 99px;
+  background: rgba(0,0,0,.22);
+  overflow: hidden;
+}
+.loadBar {
+  width: 0%; height: 100%;
+  border-radius: 99px;
+  background: #ffd166;
+  transition: width .18s ease-out;
+}
+.loadText {
+  margin-top: 12px;
+  font-size: 13px; letter-spacing: 1px;
+  color: rgba(255,255,255,.92);
+}
+
+/* =========================================================
    竖屏时的「横屏」按钮 + 横屏提示
    ---------------------------------------------------------
    点按钮：进全屏 + 尝试锁定横屏（需要一个用户手势，所以必须做成按钮）。
@@ -516,7 +557,7 @@ button:active { transform: scale(.94) }
      background-image 一起重置掉 —— 素材就会整张消失（这个坑踩过一次）。
      写成 url(...) 后：没有行内图时它自己当占位，有行内图时行内优先。 */
 .shopIcon[data-img="1"] {
-  background-image: url('鲸鲸酷跑_素材/白饭.png');
+  background-image: url('../鲸鲸酷跑_素材/白饭.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
