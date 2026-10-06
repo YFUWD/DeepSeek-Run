@@ -1,0 +1,680 @@
+/* =========================================================
+   极简酷跑 · 复活版 —— 页面样式
+   ---------------------------------------------------------
+   画布铺满整个视口（尺寸与 devicePixelRatio 在 js/10_camera.js 里算），
+   所以这里只负责：底色、字体、不选中，以及两个弹窗的外观。
+
+   移动端要点：
+     · touch-action: none   → 手指在画布上按下/拖动不会被当成滚动或双击缩放
+     · overscroll-behavior  → 关掉下拉刷新和边缘橡皮筋
+     · position: fixed      → iOS Safari 地址栏收起/展开时画面不跳动
+   ========================================================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;                 /* 现代浏览器按「可见视口」算高度 */
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #12151c;
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  position: fixed; inset: 0;
+  /* 画布居中：竖屏手机上画布会窄一点，两边留出的边用这个底色填
+     （取的是天空渐变中间那档颜色，白天黑夜都不算突兀） */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1b3a5c;
+}
+
+canvas {
+  display: block;
+  /* 宽高由 js/10_camera.js 按「逻辑高度 600 + 宽高比下限」算好写进来，
+     这里不再写死 100%，免得竖屏被拉成一条窄缝 */
+  cursor: pointer;
+  touch-action: none;             /* 跳跃/滑铲全靠指针事件，别让浏览器抢走手势 */
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  flex: none;
+}
+
+/* 通用的隐藏开关：JS 加/去掉 hidden 类来开关弹窗 */
+.hidden { display: none !important; }
+
+/* =========================================================
+   触屏提示（手机上第一次玩时显示几秒）
+   ---------------------------------------------------------
+   一条横线标出「跳 / 滑铲」的分界（位置跟着 TOUCH_DUCK_LINE 走），
+   线上面写跳、线下面写滑铲。
+   ========================================================= */
+#touchHint {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;            /* 别挡着操作 */
+  color: #fff;
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .85), 0 0 3px rgba(0, 0, 0, .9);
+  animation: touchHintFade 3.4s ease-in-out forwards;
+}
+
+/* 上半个屏幕区域：写「跳」 */
+.touchHintTop {
+  position: absolute;
+  left: 0; right: 0; top: 26%;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+/* 分界线：位置由 JS 按 TOUCH_DUCK_LINE 摆到真实分界处 */
+.touchHintLine {
+  position: absolute;
+  left: 8%; right: 8%;
+  height: 0;
+  border-top: 2px dashed rgba(255, 255, 255, .8);
+}
+
+/* 线下方：写「滑铲」 */
+.touchHintBottom {
+  position: absolute;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+@keyframes touchHintFade {
+  0%   { opacity: 0 }
+  12%  { opacity: 1 }
+  78%  { opacity: 1 }
+  100% { opacity: 0 }
+}
+
+/* =========================================================
+   开场主菜单
+   ========================================================= */
+/* 开场菜单的样式：HTML 里全部内联，这里不再重复定义
+   （原来这里写的是小写的 #menuoverlay，选择器从来不会命中） */
+
+/* =========================================================
+   弹窗（死亡界面 / 广告界面）
+   ========================================================= */
+#overlay, #adOverlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .68);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.panel {
+  background: #1e2430;
+  border-radius: 18px;
+  padding: 32px 36px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .65);
+  text-align: center;
+  min-width: 360px;
+  animation: pop .22s ease-out;
+}
+
+@keyframes pop {
+  from { transform: scale(.9); opacity: 0 }
+  to   { transform: scale(1);  opacity: 1 }
+}
+
+.panel h2 {
+  color: #fff;
+  margin: 0 0 24px;
+  font-size: 30px;
+  letter-spacing: 1px;
+}
+
+.btnRow { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+button {
+  padding: 12px 22px;
+  border-radius: 11px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform .1s, filter .12s;
+}
+button:active { transform: scale(.94) }
+
+#btnRetry, #btnShop { background: #3a4252; color: #e8eefc }
+#btnRetry:hover, #btnShop:hover { filter: brightness(1.25) }
+
+#btnAd {
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #2b1a00;
+  box-shadow: 0 6px 20px rgba(251, 133, 0, .35);
+}
+#btnAd:hover { filter: brightness(1.08) }
+
+/* =========================================================
+   广告界面 / 白饭成功界面 —— 面板尺寸
+   ---------------------------------------------------------
+   两个界面共用 .adPanel。
+   想让面板整体更大/更小，改下面的 --panel-w / --panel-h。
+   · 宽度取「94vw、--panel-w、按可用高度换算出来的宽度」里最小的那个，
+     这样竖屏手机上自动变窄、宽屏上又不会顶到屏幕外。
+   ========================================================= */
+#adOverlay, #riceOverlay {
+  overflow-y: auto;          /* 窗口特别矮时允许滚动，按钮不会被切掉 */
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+/* 白饭成功界面：层级要盖过死亡弹窗和商店 */
+#riceOverlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .78);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+}
+
+.adPanel {
+  --panel-w: 760px;          /* 面板最大宽度 */
+  --panel-h: 92vh;           /* 面板最多占多高 */
+  background: #1e2430;
+  border-radius: 20px;
+  padding: 26px 28px;
+  width: min(94vw, var(--panel-w), var(--panel-h) * 1.15);
+  max-height: var(--panel-h);
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .65);
+  position: relative;
+}
+
+/* 广告图：JS 用 background-image 把 03_assets.js 里的 AD_IMAGES 贴上来 */
+#adImageBox {
+  width: 100%;
+  aspect-ratio: 16 / 9;      /* 默认比例，图片加载后由 JS 按素材真实比例覆盖 */
+  max-height: 58vh;          /* 面板很宽时别让图把别的元素顶出屏幕 */
+  background: #2a3140;
+  border: 1px solid #333c4e;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background-size: contain;  /* contain：完整显示，不裁切 */
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+/* 广告图下方的跳转按钮 */
+.adLink {
+  display: block;
+  margin: 0 auto 16px;
+  padding: 11px 26px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #2b1a00;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+  width: fit-content;
+  box-shadow: 0 6px 20px rgba(251, 133, 0, .35);
+  transition: filter .12s, transform .1s;
+}
+.adLink:hover  { filter: brightness(1.08) }
+.adLink:active { transform: scale(.95) }
+
+#adImageLabel { color: #697386; font-size: 16px; letter-spacing: 1px }
+
+#adCountdown {
+  font-size: 52px;
+  font-weight: 800;
+  color: #ffd166;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+#adHint { color: #9aa5b8; font-size: 15px; margin-top: 8px }
+
+/* =========================================================
+   白饭成功界面（复用 .adPanel 外壳，只加自己的元素样式）
+   ========================================================= */
+
+#riceImageBox {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: min(46vh, 420px);   /* 大图不要太小，看不清 */
+  max-height: 62vh;
+  background: #2a3140;
+  border: 1px solid #333c4e;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+#riceImageLabel {
+  color: #697386;
+  font-size: 16px;
+  letter-spacing: 1px;
+  padding: 0 12px;
+  text-align: center;
+}
+
+/* 胜利界面顶部的大标题 */
+.victoryTitle {
+  color: #ffd166;
+  margin: 4px 0 18px;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  line-height: 1.2;
+  text-shadow: 0 4px 20px rgba(255, 209, 102, .45),
+               0 2px 0 rgba(0, 0, 0, .35);
+}
+
+.riceTitle {
+  color: #ffd166;
+  margin: 0 0 20px;
+  font-size: 24px;
+  line-height: 1.5;
+  letter-spacing: 1px;
+}
+
+#btnRiceContinue {
+  width: 100%;
+  padding: 16px 0;
+  border-radius: 12px;
+  border: none;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #2b1a00;
+  box-shadow: 0 6px 20px rgba(251, 133, 0, .35);
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter .12s, transform .1s;
+}
+#btnRiceContinue:hover  { filter: brightness(1.08) }
+#btnRiceContinue:active { transform: scale(.96) }
+
+/* 广告倒计时结束后的「复活」按钮 */
+#btnAdRevive {
+  margin-top: 14px;
+  padding: 12px 40px;
+  font-size: 18px;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #2b1a00;
+  box-shadow: 0 6px 20px rgba(251, 133, 0, .35);
+}
+#btnAdRevive:hover  { filter: brightness(1.08) }
+#btnAdRevive:active { transform: scale(.95) }
+
+/* =========================================================
+   商店（暂时是空壳，右上角一个 X 关闭）
+   ========================================================= */
+#shopOverlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .68);
+  backdrop-filter: blur(4px);
+  z-index: 20;                 /* 盖在死亡弹窗之上 */
+}
+
+.shopPanel {
+  background: #1e2430;
+  border-radius: 18px;
+  padding: 26px 32px 36px;
+  width: min(88vw, 460px);
+  min-height: 300px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .65);
+  text-align: center;
+  position: relative;
+  animation: pop .22s ease-out;
+}
+
+.shopPanel h2 {
+  color: #fff;
+  margin: 6px 0 20px;
+  font-size: 26px;
+  letter-spacing: 1px;
+}
+
+.shopClose {
+  position: absolute;
+  top: 12px; right: 14px;
+  width: 36px; height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  background: #3a4252;
+  color: #e8eefc;
+  font-size: 22px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.shopClose:hover { filter: brightness(1.25) }
+
+/* 商品列表：一排圆角矩形卡片 */
+.shopBody {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 6px 0 18px;
+}
+
+.shopItem {
+  width: 132px;
+  background: #252b38;
+  border-radius: 16px;
+  padding: 12px 12px 10px;
+  cursor: pointer;
+  transition: transform .12s, filter .12s;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.shopItem:hover { filter: brightness(1.15) }
+.shopItem:active { transform: scale(.95) }
+
+/* 圆角矩形图标 */
+.shopIcon {
+  width: 100%;
+  height: 96px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* =========================================================
+   商店卡片的占位图（CSS 画的渐变 + 圆斑）
+   ---------------------------------------------------------
+   ★ 贴了真素材之后必须把这层关掉 —— 否则 ::after 那个「一团饭」的圆斑
+     会盖在真图上面，看起来就像素材贴错了（白饭卡片就是这样被坑的）。
+   js/16_shop.js 贴图时会给元素加 data-img="1"，这里据此隐藏。
+   ========================================================= */
+.shopIconPot {
+  background: linear-gradient(160deg, #cfd6e0, #8a94a6 65%, #6f798b);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.55),
+              inset 0 -5px 10px rgba(0,0,0,.28),
+              0 6px 14px rgba(0,0,0,.35);
+}
+.shopIconPot::after {
+  content: '';
+  position: absolute;
+  left: 14%; right: 14%; top: 30%;
+  height: 4px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.5);
+  box-shadow: 0 12px 0 rgba(255,255,255,.18);
+}
+/* 白饭：米白渐变 + 中间一团饭 */
+.shopIconRice {
+  background: linear-gradient(160deg, #fffdf7, #f0e8d6 70%, #ded2b8);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.9),
+              inset 0 -5px 10px rgba(0,0,0,.08),
+              0 6px 14px rgba(0,0,0,.35);
+}
+.shopIconRice::after {
+  content: '';
+  position: absolute;
+  left: 16%; right: 16%; top: 22%; bottom: 18%;
+  border-radius: 50% 50% 46% 46%;
+  background: radial-gradient(circle at 32% 28%, #ffffff, #efe6d0 70%, #d8cbaa);
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,.12);
+}
+
+/* 已经贴上真素材的卡片：把 CSS 占位渐变和圆斑压掉，让素材干干净净地显示。
+   ★ 注意：这里必须写成 `background-image: url(...)` 而不是 `background: none`。
+     `background` 是简写，带 !important 时会把行内 style 贴上去的
+     background-image 一起重置掉 —— 素材就会整张消失（这个坑踩过一次）。
+     写成 url(...) 后：没有行内图时它自己当占位，有行内图时行内优先。 */
+.shopIcon[data-img="1"] {
+  background-image: url('鲸鲸酷跑_素材/白饭.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: none !important;
+}
+.shopIcon[data-img="1"]::after { content: none !important; }
+
+.shopPrice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ffd166;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.shopOwned {
+  color: #697386;
+  font-size: 12px;
+  letter-spacing: .5px;
+}
+.shopOwned b { color: #9aa5b8 }
+
+.shopCoins {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: rgba(255,204,0,.1);
+  color: #ffd166;
+  font-size: 14px;
+  font-weight: 700;
+}
+.shopCoins b { font-size: 17px; color: #ffcc00 }
+
+/* 鲸元券小图标：商店价格、商店余额、购买弹窗共用。
+   以前是 CSS 画的金币圆点，现在直接显示 处理后/鲸元券.png（票券样子）。
+   图片路径由 js/16_shop.js 的 applyUiImages() 贴上来。 */
+.coinDot {
+  width: 26px; height: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  display: inline-block;
+  flex: none;
+}
+
+/* 购买确认弹窗（盖在商店之上） */
+#buyOverlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .55);
+  z-index: 30;
+}
+.buyPanel {
+  background: #1e2430;
+  border-radius: 16px;
+  padding: 26px 32px 28px;
+  min-width: 260px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .65);
+  animation: pop .22s ease-out;
+}
+.buyPanel h3 {
+  color: #fff;
+  margin: 0 0 14px;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+.buyPriceRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffd166;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.buyMsg {
+  color: #ef476f;
+  font-size: 13px;
+  min-height: 18px;
+  margin-bottom: 8px;
+}
+#btnBuyCancel { background: #3a4252; color: #e8eefc }
+#btnBuyCancel:hover { filter: brightness(1.25) }
+#btnBuyConfirm {
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #2b1a00;
+  box-shadow: 0 6px 20px rgba(251, 133, 0, .35);
+}
+#btnBuyConfirm:hover { filter: brightness(1.08) }
+#btnBuyConfirm:disabled {
+  filter: grayscale(.7) brightness(.7);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 铁盆按钮：屏幕下方居中 */
+.potButtonWrap {
+  position: fixed;
+  bottom: calc(30px + var(--sab));
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+/* 屏幕下方居中的道具按钮：圆角方形 */
+.potButton {
+  pointer-events: auto;
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .1s, background .12s, border-color .12s;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.potButton:hover { background: rgba(255,255,255,.14) }
+.potButton:active { transform: scale(.94) }
+.potButton.active {
+  background: rgba(255,209,102,.22);
+  border-color: #ffd166;
+}
+
+/* 方形按钮中间的圆形铁盆图标 */
+.potDot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #cfd6e0, #8a94a6);
+  border: 1px solid #6f798b;
+  display: inline-block;
+  flex: none;
+}
+
+/* 右上角数量角标 */
+.potButtonCount {
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: #ffcc00;
+  color: #2b1a00;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #12151c;
+  box-sizing: content-box;
+}
+
+/* 左上角快捷键提示（Z） */
+.potKey {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 7px;
+  background: rgba(0,0,0,.6);
+  border: 2px solid #12151c;
+  color: #e8eefc;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+  letter-spacing: 0;
+}
+
+/* 白饭成功界面的样式见上面「白饭成功界面（复用 .adPanel 外壳）」那段，
+   这里原来是第二份重复且冲突的定义（height:300px + background-size:cover，
+   会把 JS 按素材比例算出来的 aspect-ratio 顶掉），已删除。 */
+
+/* =========================================================
+   死亡弹窗里的「累计总鲸元券」
+   ========================================================= */
+.totalCoinBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: rgba(255, 204, 0, .1);
+  color: #ffd166;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.totalCoinBox b { font-size: 20px; color: #ffcc00 }
+/* 死亡弹窗里的「鲸元券」图标：
+   不用 CSS 画的金币了，直接显示 处理后/鲸元券.png 那张票券。
+   图片路径由 js/16_shop.js 的 applyUiImages() 贴上来。 */
+.totalCoinIcon {
+  width: 30px;
+  height: 18px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  display: inline-block;
+  flex: none;
+}
