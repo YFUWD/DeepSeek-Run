@@ -257,6 +257,12 @@ function hideMenu() {
 
 if (btnStartGame) {
   btnStartGame.addEventListener('click', () => {
+    /* ★ audioUnlock 必须在这里叫一次。
+       它原来只挂在键盘和画布上，点按钮走不到 ——
+       结果「开始游戏」不仅没声音，AudioContext 也没建起来，
+       SFX.click() 是空跑。点了按钮才算真正开始，顺手解锁。 */
+    audioUnlock();
+
     SFX.click();
     markIntroSeen();
     hideMenu();
@@ -269,6 +275,9 @@ if (btnStartGame) {
 
     state      = 'intro';
     viewOffset = MENU_VIEW_OFFSET;
+
+    // ★ 按开始之后隔 2 秒才起 BGM（时长见 00_audio.js 的 BGM_START_DELAY_MS）
+    bgmStartCountdown();
 
     // 手机上第一次玩：标一下「上面跳 / 下面滑铲」的分界
     if (typeof maybeShowTouchHint === 'function') maybeShowTouchHint();
