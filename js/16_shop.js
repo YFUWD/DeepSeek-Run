@@ -189,6 +189,9 @@ function showRiceOverlay() {
   /* 买白饭 = 通关胜利，放 victory 音效（开头空白已在生成时剪掉） */
   SFX.victory();
 
+  /* 顺手报一次「通关」（同一个会话只报一次，见 js/17_visit.js） */
+  if (typeof reportClear === 'function') reportClear();
+
   ricePaint();
   riceOverlay.classList.remove('hidden');
 }
