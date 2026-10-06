@@ -20,11 +20,17 @@ const JUMPV      = -13;
 const FAST_FALL  = 16;
 
 const SPD        = 3.8;
-const SPD_MAX    = 16;
-/* 每帧加速量。速度拉满所需时间 = (SPD_MAX - SPD) / SPD_ACC，
-   要缩短 30% 就把旧值 0.0008 除以 0.7 → 0.00114。
-   （原约 254 秒 → 现在约 178 秒） */
-const SPD_ACC    = 0.00114;
+/* 速度上限。16 是初版，后来觉得太快 → 调到它的 70%（= 11.2）。 */
+const SPD_MAX    = 11.2;
+/* 每帧加速量（线性加速：speed += SPD_ACC * dt）。
+   速度拉满所需时间 = (SPD_MAX - SPD) / SPD_ACC。
+
+   ★ 改 SPD_MAX 时必须同步改这里，否则「拉满要多久」就变了：
+       新 SPD_ACC = 旧 SPD_ACC × (新 SPD_MAX - SPD) / (旧 SPD_MAX - SPD)
+     这次：0.00114 × (11.2 - 3.8) / (16 - 3.8) = 0.0006915
+     时间保持约 10702 帧 ≈ 178 秒不变（和 16 那版一模一样）。
+     冒烟测试里有一条断言盯着这个时间，改一个漏一个会报错。 */
+const SPD_ACC    = 0.0006915;
 
 const COYOTE     = 6;
 const BUFFER     = 8;
