@@ -296,6 +296,9 @@ reset();
 loadAssets();
 setTimeout(reportAssets, 1500);
 
+/* 访问统计：只在这里取一次数，之后渲染只读内存（限流 30 次/10 秒） */
+if (typeof startVisitCounter === 'function') startVisitCounter();
+
 /* 素材就绪之后才开跑。
    主循环故意不在这里启动：加载界面是纯 DOM 画的，用不着画布；
    要是先把循环跑起来，玩家在加载界面背后就已经开始跑了，
