@@ -58,6 +58,67 @@ canvas {
 .hidden { display: none !important; }
 
 /* =========================================================
+   竖屏时的「横屏」按钮 + 横屏提示
+   ---------------------------------------------------------
+   点按钮：进全屏 + 尝试锁定横屏（需要一个用户手势，所以必须做成按钮）。
+   Android Chrome 能真的锁成横屏；iOS Safari 不支持锁定，
+   会退化成「全屏 + 提示你手动横过来」。
+   ========================================================= */
+#rotateBtn {
+  position: fixed;
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(18, 21, 28, .72);
+  backdrop-filter: blur(6px);
+  color: #ffd166;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+  touch-action: manipulation;
+}
+#rotateBtn:active { transform: scale(.95) }
+
+/* 只在「竖着的触摸屏」上显示，横过来或电脑上自动隐藏 */
+#rotateBtn.show { display: inline-block }
+@media (hover: hover) and (pointer: fine) {
+  #rotateBtn.show { display: none }        /* 鼠标设备不给看 */
+}
+
+#rotateHint {
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(8, 10, 16, .78);
+  color: #ffd166;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-align: center;
+}
+#rotateHint .rotateHintIcon {
+  font-size: 54px;
+  animation: spinHint 1.8s ease-in-out infinite;
+}
+@keyframes spinHint {
+  0%, 40%   { transform: rotate(0deg) }
+  60%, 100% { transform: rotate(90deg) }
+}
+
+/* =========================================================
    触屏提示（手机上第一次玩时显示几秒）
    ---------------------------------------------------------
    一条横线标出「跳 / 滑铲」的分界（位置跟着 TOUCH_DUCK_LINE 走），

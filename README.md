@@ -1,7 +1,9 @@
-# 鲸鲸酷跑 · 网页版
+# 鲸鲸酷跑
 
 一个纯前端的横版跑酷小游戏。跳到鲸元券上、躲开高藤壶和藤蔓、别掉进坑，
 撞死了还能看广告原地复活。电脑键盘和手机触屏都能玩。
+
+> 在线玩：https://yfuwd.github.io/DeepSeek-Run/
 
 ---
 
@@ -16,29 +18,8 @@ python -m http.server 8000
 # 然后浏览器打开 http://localhost:8000
 ```
 
-**线上**：把整个文件夹传到 GitHub Pages / 任意静态托管即可。
-
----
-
-## 发布到 GitHub Pages
-
-1. 新建一个仓库，把这个文件夹里的**全部内容**推上去：
-
-   ```bash
-   git init
-   git add .
-   git commit -m "鲸鲸酷跑"
-   git branch -M main
-   git remote add origin https://github.com/<你的用户名>/<仓库名>.git
-   git push -u origin main
-   ```
-
-2. 打开仓库的 **Settings → Pages**
-3. **Source** 选 `Deploy from a branch`，分支选 `main`，目录选 `/ (root)`，保存
-4. 等一两分钟，访问 `https://<你的用户名>.github.io/<仓库名>/`
-
-> 所有资源都是**相对路径**，所以放在子目录（`用户名.github.io/仓库名/`）也能正常加载。
-> 文件夹里带的 `.nojekyll` 是给 GitHub Pages 用的，别删。
+**线上**：本仓库自带 GitHub Pages 配置，推送后在
+`Settings → Pages → Source: Deploy from a branch → main / (root)` 打开即可。
 
 ---
 
@@ -50,6 +31,26 @@ python -m http.server 8000
 | `↓` / `S` 按住滑铲 / 快速下落 | 按住**下半部分**滑铲 |
 | `Z` 使用铁盆 | 点屏幕下方的道具按钮 |
 | `M` 静音 | 主菜单里有 BGM 音量滑块 |
+
+### 设备是自动适配的
+
+没有「手机版 / 电脑版」两套，也不看 User-Agent，一切都按**窗口尺寸**实时算：
+
+| 打开的设备 | 画面 |
+|---|---|
+| 电脑 / 平板横屏 | 铺满整个窗口 |
+| 手机横屏 | 铺满 |
+| **手机竖屏** | 横向撑到最大、**上下留一点边**（不留边的话可视宽度只有 `600 × 0.46 ≈ 277`，前面来什么都看不清） |
+| 触摸屏笔记本 | 当电脑处理（只有真触屏才会弹触屏提示） |
+
+**手机竖屏时，右下角会出现「⟳ 横屏」按钮**：
+
+- 点它 → 进入**全屏**并尝试**锁定横屏**（画面立刻变宽、黑边消失）
+- **Android Chrome**：能真的锁成横屏
+- **iOS Safari**：系统不提供方向锁定，会退化成「进全屏 + 提示你把手机横过来」
+- 电脑上、或已经横屏时，按钮**自动隐藏**
+
+> 浏览器的硬性限制：全屏和方向锁定**必须由用户点击触发**，没法自动做，所以只能做成按钮。
 
 ---
 
@@ -70,9 +71,9 @@ python -m http.server 8000
 ```
 index.html              页面骨架
 .nojekyll               给 GitHub Pages 用（跳过 Jekyll 处理）
-css/style.css           页面样式、弹窗、触屏提示
+css/style.css           页面样式、弹窗、触屏提示、横屏按钮
 js/
-  00_audio.js           音效合成 + 背景音乐 + 音量滑块
+  00_audio.js           音效合成 + 背景音乐 + 音量滑块 + 横屏按钮 + 触屏提示
   01_config.js          ★ 物理参数 / 颜色 / 素材槽位 / 关卡生成参数 / 各种手感开关
   02_utils.js           小工具（随机数、clamp、圆角矩形、存档读写）
   03_assets.js          ★ 素材清单（图片路径填这里）与加载
@@ -112,12 +113,11 @@ audio/
 | **怪物出现间隔 / 存活时长** | `MONSTER_INTERVAL_MIN` `MONSTER_INTERVAL_MAX` `MONSTER_DURATION` |
 | 子弹的粉红圈 | `BULLET_RING_COLOR` `BULLET_RING_W` `BULLET_RING_GLOW` `BULLET_RING_ALPHA` |
 | 被子弹打到的回弹力度 / 无敌 | `15_main.js` 的 `BULLET_KNOCKBACK` `BULLET_KNOCK_FRAMES` `BULLET_HIT_IFRAME` |
-| **手机竖屏画幅**（留边多少） | `10_camera.js` 的 `MIN_ASPECT` |
-| 触屏「跳 / 滑铲」分界 | `TOUCH_DUCK_LINE` |
+| **手机竖屏留边多少** | `10_camera.js` 的 `MIN_ASPECT`（调小 = 留边更少） |
+| 触屏「跳 / 滑铲」分界 | `01_config.js` 的 `TOUCH_DUCK_LINE` |
 | 铁盆位置与大小 | `POT_WIDTH_RATIO` `POT_Y` `POT_BOTTOM_CLIP_Y` |
 | 滑铲压扁程度 | `DUCK_SCALE` `DUCK_SQUASH` `DUCK_W_RATIO` |
-| 背音乐音量 | `js/00_audio.js` 的 `BGM_VOLUME`，或直接在游戏里拖滑块 |
-| 四种路障的出现比例 | `06_obstacles.js` 的 `spawnObstacleAt()` / `placeObstacleAt()` |
+| 背景音乐音量 | `js/00_audio.js` 的 `BGM_VOLUME`，或直接在游戏里拖滑块 |
 | 广告图 / 广告链接 | `js/03_assets.js` 的 `AD_IMAGES` / `AD_LINKS` |
 
 ### 换美术
@@ -125,14 +125,14 @@ audio/
 图片都放在 `鲸鲸酷跑_素材/`，路径写在 **`js/03_assets.js` 的 `ASSET_FILES`** 里。
 某个槽位留空 `''` 也能玩，会退回程序绘制的占位图形，控制台会打一行 warning。
 
-> 素材作者说明：角色「鲸鱼娘」来自同人小游戏《大肥鱼大战西装藤壶怪》，
+> 素材说明：角色「鲸鱼娘」来自同人小游戏《大肥鱼大战西装藤壶怪》，
 > **请勿商用**，也别声称是官方素材。
 
 ---
 
 ## 已知限制
 
-- **地面贴图**目前是程序绘制的泥土+草地（没有对应素材）
+- **地面贴图**目前是程序绘制的泥土 + 草地（没有对应素材）
 - 背景音乐在 `file://` 下部分浏览器会拦（浏览器的自动播放策略），用 http 打开就正常
-- 手机上竖屏会**上下留一点边**（黑边），这是故意的：不留边的话游戏可视宽度只有
-  `600 × 0.46 ≈ 277`，前面来什么都看不清。想让留边少一点就调小 `MIN_ASPECT`
+- **iOS 无法锁定屏幕方向**：系统限制，只能全屏后手动横过来（Android 可以真的锁）
+- 手机上竖屏会上下留边，这是故意的（理由见上面的「设备是自动适配的」）

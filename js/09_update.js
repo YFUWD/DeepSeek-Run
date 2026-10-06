@@ -131,9 +131,21 @@ function update(dt) {
     } else if (typeof knockLeft !== 'undefined' && knockLeft > 0) {
       /* 正在被藤壶子弹往回弹：镜头【不跟着人走】，照常按 speed 前进。
          既不能倒退（画面倒抽），也不能冻结（画面突然停住），
-         人只是在画面里稍微往右挪一点 —— 看起来就是"被撞了一下"。 */
+         人只是在画面里稍微往右挪一点 —— 看起来就是"被撞了一下"。
+         （现在回弹是纯视觉偏移，不动物理坐标，所以这里其实和下面等效。） */
       cam += speed * dt;
+      camSoft = true;      // 回弹结束后柔和地拉回正常跟随
+    } else if (camSoft) {
+      /* 中弹恢复期：柔和地把镜头拉回目标位置。
+         只在刚被子弹打完那几帧启用，避免起步/状态切换时画面生硬地挪一下。 */
+      const want = player.x - SCREEN_X;
+      cam += (want - cam) * CAM_CATCHUP * dt;
+      if (Math.abs(want - cam) < 0.5) { cam = want; camSoft = false; }
     } else {
+      /* 正常情况：精确跟随（不做平滑）。
+         精确跟随能保证「镜头推进量 == 当帧速度」，不会有恒定落差；
+         而被子弹打中的回弹是纯画面偏移、不动物理坐标，
+         所以这里根本不会出现需要追赶的落差。 */
       cam = player.x - SCREEN_X;
     }
   }

@@ -34,6 +34,13 @@ function readyRunFrames() {
     .filter(im => im && im.complete && im.naturalWidth > 0);
 }
 
+/* 被子弹打中时的画面偏移量。定义在 15_main.js 里，
+   但脚本加载顺序上 13 在 15 前面，用 typeof 保护一下，
+   以免（万一）在它还没定义时被调用而抛错。 */
+function knockDrawOff() {
+  return (typeof knockOff === 'number') ? knockOff : 0;
+}
+
 function drawPlayer() {
   // 无敌时按 8 帧的节奏闪
   const show = invTimer <= 0 || Math.floor(invTimer / 8) % 2 === 0;
@@ -44,8 +51,9 @@ function drawPlayer() {
   const sprH = PLAYER_SPRITE_H;              // 贴图绘制高度（固定 56，脚底对齐）
 
   // 人物以「脚底中心」为锚点
+  // knockOff 是被子弹打中时的纯画面偏移（世界坐标不变，见 15_main.js）
   ctx.save();
-  ctx.translate(player.x - cam + w / 2, player.y);
+  ctx.translate(player.x - cam + w / 2 + knockDrawOff(), player.y);
 
   // 跑步动画：着地且没趴下时切帧，空中保持当前帧
   if (player.onGround && !player.duck) {
@@ -129,10 +137,10 @@ function drawPlayer() {
 
   ctx.restore();
 
-  // 无敌光环
+  // 无敌光环（跟着人一起偏移）
   if (invTimer > 0) {
     ctx.beginPath();
-    ctx.arc(player.x - cam + w / 2, player.y - sprH / 2, w * 1.15, 0, Math.PI * 2);
+    ctx.arc(player.x - cam + w / 2 + knockDrawOff(), player.y - sprH / 2, w * 1.15, 0, Math.PI * 2);
     ctx.strokeStyle = COL.invuln;
     ctx.lineWidth = 3;
     ctx.stroke();

@@ -31,6 +31,16 @@
 <body>
 <canvas id="c"></canvas>
 
+<!-- 竖屏时的「横屏」按钮：点一下进入全屏并尝试锁定横屏。
+     iOS Safari 不支持屏幕方向锁定，那种情况会退化成「全屏后请你手动横过来」。 -->
+<button id="rotateBtn" class="hidden" type="button" aria-label="横屏游玩">⟳ 横屏</button>
+
+<!-- 横屏提示：只在成功锁成横屏后，还竖着拿手机时显示 -->
+<div id="rotateHint" class="hidden">
+  <div class="rotateHintIcon">⟳</div>
+  <div>把手机横过来更舒服</div>
+</div>
+
 <!-- 触屏提示：只在「触摸设备 + 刚进游戏」时出现几秒，然后自己淡掉。
      手机上第一次玩不知道点哪儿，这个很有用。 -->
 <div id="touchHint" class="hidden" aria-hidden="true">

@@ -64,6 +64,9 @@ let dieY = 0;                 // 死的时候玩家脚底在哪
 let blockedPlatform = null;   // 最近一次把玩家挡住的平台
 let blockedSeg      = null;   // 那个平台上挡路的实心段（含坑洞切分后的信息）
 
+/* 中弹画面偏移结束后，镜头柔和拉回期间的开关（见 09_update.js） */
+let camSoft = false;
+
 /* ---- 鲸元券海 ---- */
 let nextCoinSeaScore = COIN_SEA_TRIGGER_STEP;
 let coinSeaPhase     = 'none';
@@ -138,6 +141,7 @@ function reset() {
   dieX = player.x;
   dieY = player.y;
   blockedPlatform = null;
+  camSoft = false;
 
   nextCoinSeaScore = COIN_SEA_TRIGGER_STEP;
   coinSeaPhase     = 'none';

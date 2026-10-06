@@ -7,17 +7,20 @@ let monster = null;
 let barnacleBullets = [];
 let monsterSpawnTimer = 0;
 
-/* ---- 子弹打中玩家：往回弹 ----
-   原来是「瞬间把 player.x 减 36」，人会直接跳一下、很生硬，
-   而且连着中弹会被推回好几段。
-   现在改成：给一个往左的初速度，按帧缓出（越推越慢），推够距离就停；
-   同时给 0.25 秒的短暂无敌，避免一颗接一颗把人钉在原地。 */
-const BULLET_KNOCKBACK   = 36;   // 总共往回推多少像素（和以前一样远）
-const BULLET_KNOCK_FRAMES = 9;   // 用几帧推完（越小越脆，越大越顺）
-const BULLET_HIT_IFRAME  = 15;   // 中弹后的短暂无敌帧数（60fps → 0.25 秒）
+/* ---- 子弹打中玩家：往后闪一下 ----
+   沿革（踩过两次坑）：
+     ① 最早是「瞬间把 player.x 减 36」→ 人生硬地跳一下。
+     ② 改成按帧缓出推 player.x → 手感好了，但**世界坐标真的后退了**，
+        回弹结束时镜头必须把这段距离猛追回来，画面会抖一下（你看到的那个抖）。
+     ③ 现在：世界坐标一动不动，只做一个**纯画面偏移** knockOff。
+        人看起来往后闪了一下，镜头完全不用管，零抖动、零物理副作用。 */
+const BULLET_KNOCKBACK    = 34;  // 总共往回闪多少像素（纯画面偏移，不动世界坐标）
+const BULLET_KNOCK_FRAMES = 9;   // 用几帧闪完（越小越脆，越大越顺）
+const BULLET_HIT_IFRAME   = 15;  // 中弹后的短暂无敌帧数（60fps → 0.25 秒）
 
-let knockV = 0;                  // 当前每帧往回推多少
-let knockLeft = 0;               // 还要推几帧
+let knockV = 0;                  // 当前每帧往后偏多少
+let knockLeft = 0;               // 还要偏几帧
+let knockOff = 0;                // 当前画面偏移量（负数 = 往后闪）
 let hitIFrame = 0;               // 剩余无敌帧数
 
 /* =========================================================
@@ -230,14 +233,24 @@ update = function (dt) {
   updateMonster(dt);
   updateBarnacleBullets(dt);
 
-  /* ---- 中弹后的回弹 + 短暂无敌 ---- */
+  /* ---- 中弹后的回弹 + 短暂无敌 ----
+     ★ 回弹做成【纯画面偏移】，不动 player.x：
+       如果真去改世界坐标，玩家的「正常位置」就落后了，
+       镜头为了跟上必须猛追一截 —— 那就是之前画面抖一下的原因。
+       现在世界坐标一动不动，人只是在画面里往后闪一下，镜头完全不用管。 */
   if (hitIFrame > 0) hitIFrame -= dt;
 
   if (knockLeft > 0) {
     const step = Math.min(knockLeft, dt);
-    player.x -= knockV * step;      // 往回推
-    knockV *= Math.pow(0.72, dt);   // 缓出：越推越慢，像被撞了一下滑停
+    knockOff -= knockV * step;      // 只是画面往后偏
+    knockV *= Math.pow(0.72, dt);   // 缓出：越闪越慢，像被撞了一下滑停
     knockLeft -= step;
+    if (knockLeft <= 0) knockV = 0;
+  } else if (knockOff !== 0) {
+    /* 回弹帧数走完，把剩下的偏移【平滑】归零。
+       不能一帧清零 —— 那会是个小顿挫（剩下多少、就"啪"地跳回多少）。 */
+    knockOff *= Math.pow(0.55, dt);
+    if (Math.abs(knockOff) < 0.3) knockOff = 0;
   }
 
   /* 子弹 vs 玩家：
@@ -264,9 +277,10 @@ reset = function () {
   monster = null;
   barnacleBullets = [];
   monsterSpawnTimer = rnd(MONSTER_INTERVAL_MIN, MONSTER_INTERVAL_MAX);
-  // 回弹状态也要清掉，否则重开一局可能带着上次的推力
+  // 回弹状态也要清掉，否则重开一局可能带着上次的偏移
   knockV = 0;
   knockLeft = 0;
+  knockOff = 0;
   hitIFrame = 0;
 };
 

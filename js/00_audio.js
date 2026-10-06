@@ -102,16 +102,122 @@ bgmInit();
 
 
 /* =========================================================
+   竖屏时的「横屏」按钮：全屏 + 尝试锁定横屏
+   ---------------------------------------------------------
+   为什么必须做成按钮：浏览器要求全屏和屏幕方向锁定
+   都发生在**用户手势**里（点一下），所以没法自动做。
+
+   Android Chrome：能真的锁成横屏。
+   iOS Safari：根本没有 screen.orientation.lock，
+               所以退化成「进全屏 + 提示你手动横过来」。
+   ========================================================= */
+function rotateSupported() {
+  return !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+}
+
+/* 取屏幕方向对象。
+   ★ 一定要用 typeof 保护：有些环境（老浏览器、无头测试）根本没有 screen 这个全局，
+     直接写 screen.orientation 会抛 ReferenceError，把整个脚本带崩。 */
+function orientationObj() {
+  try {
+    if (typeof screen === 'undefined') return null;
+    return screen.orientation || null;
+  } catch (e) { return null; }
+}
+
+function requestLandscape() {
+  const el = document.documentElement;
+  const fsReq = el.requestFullscreen || el.webkitRequestFullscreen;
+  const p = fsReq ? fsReq.call(el) : null;
+  const after = () => {
+    try {
+      const o = orientationObj();
+      if (o && typeof o.lock === 'function') o.lock('landscape').catch(() => {});
+    } catch (e) { /* iOS 等不支持，忽略 */ }
+    updateRotateUI();
+  };
+  if (p && p.then) p.then(after).catch(after);
+  else after();
+}
+
+/* 显示/隐藏按钮和提示：
+   · 竖着 + 触摸设备 + 支持全屏 → 显示按钮
+     （Android Chrome 点它能真的锁横屏；iOS 上会退化成「全屏 + 提示你手动横过来」，
+       iOS 也算「支持全屏」，所以按钮照样给 —— 竖屏时画幅最窄，最需要它）
+   · 只有连全屏都不支持时，才不显示（点了也没用）
+   · 已经锁成横屏、但手机还竖着拿 → 显示「把手机横过来」提示 */
+function updateRotateUI() {
+  const btn  = document.getElementById('rotateBtn');
+  const hint = document.getElementById('rotateHint');
+  if (!btn || !hint) return;
+
+  const portrait = isNarrowViewport();
+  const touch = isTouchDevice();
+
+  const showBtn = portrait && touch && rotateSupported();
+  btn.classList.toggle('show', showBtn);
+  btn.classList.toggle('hidden', !showBtn);
+
+  let lockedLandscape = false;
+  try {
+    const o = orientationObj();
+    if (o && typeof o.type === 'string') lockedLandscape = o.type.indexOf('landscape') === 0;
+  } catch (e) { /* 忽略 */ }
+  hint.classList.toggle('hidden', !(lockedLandscape && portrait));
+}
+
+function initRotateButton() {
+  const btn  = document.getElementById('rotateBtn');
+  const hint = document.getElementById('rotateHint');
+  if (!btn) return;
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    SFX.click && SFX.click();
+    requestLandscape();
+  });
+  if (hint) hint.addEventListener('click', () => hint.classList.add('hidden'));
+
+  addEventListener('resize', updateRotateUI);
+  addEventListener('orientationchange', () => setTimeout(updateRotateUI, 300));
+  document.addEventListener('fullscreenchange', () => setTimeout(updateRotateUI, 150));
+  document.addEventListener('webkitfullscreenchange', () => setTimeout(updateRotateUI, 150));
+  const o = orientationObj();
+  if (o && o.addEventListener) o.addEventListener('change', updateRotateUI);
+  updateRotateUI();
+}
+
+initRotateButton();
+
+/* =========================================================
    触屏小提示：手机上第一次开始游戏时，标出「跳 / 滑铲」的分界
    ========================================================= */
 const TOUCH_HINT_KEY = 'whale_run_touchhint_v1';
 
+/* 是不是「手指操作」的设备。
+   只看 maxTouchPoints 会把带触摸屏的笔记本也算进来，
+   所以优先用媒体查询 (hover: none) and (pointer: coarse)：
+   这一条描述的正是「主输入方式没有悬停能力、而且是粗指针」，也就是手机/平板。 */
 function isTouchDevice() {
+  try {
+    if (window.matchMedia) {
+      if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return true;
+      // 明确是精细指针 + 能悬停（鼠标）-> 不是触屏设备
+      if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
+    }
+  } catch (e) { /* 忽略 */ }
   try {
     if (navigator.maxTouchPoints > 0) return true;
     if ('ontouchstart' in window) return true;
   } catch (e) { /* 忽略 */ }
   return false;
+}
+
+/* 宽高比：横屏窄窗口也算「手机式」布局，用来决定要不要显示横屏按钮 */
+function isNarrowViewport() {
+  try {
+    return window.innerWidth < window.innerHeight;
+  } catch (e) { return false; }
 }
 
 /* 只在触摸设备 + 没看过 + 游戏真正开始时调一次 */
