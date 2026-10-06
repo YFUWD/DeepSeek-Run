@@ -90,6 +90,7 @@ js/
   14_hud.js             分数 / 最高分 / 速度条 / 无敌倒计时
   15_main.js            draw() 总入口 + 主循环 + 怪物逻辑 + 启动
   16_shop.js            商店、购买、白饭胜利界面、开场菜单
+  17_visit.js           访问统计（abacus；拿不到数字就静默不画，不影响玩）
 audio/
   bgm.m4a         背景音乐（单曲循环，来自《藤壶的入侵》）
   victory.mp3           买到白饭时的胜利音效
@@ -121,6 +122,7 @@ audio/
 | **换背景音乐** | 新文件放进 `audio/`，改 `js/00_audio.js` 的 `BGM_LIST`（单曲循环） |
 | 广告图 / 广告链接 | `js/03_assets.js` 的 `AD_IMAGES` / `AD_LINKS` |
 | **复活后的安全距离 / 无敌时长** | `REVIVE_SAFE_FRAMES`（按时间算）`INVULN_TIME` |
+| **访问统计（换计数器）** | `js/01_config.js` 的 `VISIT_NS` / `VISIT_KEY` / `CLEAR_KEY` |
 
 ### 换美术
 
