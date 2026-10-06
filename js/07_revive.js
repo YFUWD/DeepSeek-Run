@@ -174,11 +174,15 @@ function tryReviveOnPlatform() {
 function revive() {
   hasRevived = true;
 
+  /* 复活瞬间的「安全距离」：按当前速度折算，夹在上下限之间。
+     写死距离的坑见 01_config.js 里 REVIVE_SAFE_FRAMES 那段注释。 */
+  const safe = clamp(speed * REVIVE_SAFE_FRAMES, REVIVE_SAFE_MIN, REVIVE_SAFE_MAX);
+
   // 只清障碍和坑洞；platforms 保持不动
   obstacles = obstacles.filter(o => o.x + o.w < player.x - REVIVE_CLEAR_BACK ||
-                                    o.x > player.x + REVIVE_CLEAR_AHEAD);
+                                    o.x > player.x + safe);
   pits      = pits.filter(p => p.x + p.w < player.x - REVIVE_CLEAR_BACK ||
-                               p.x > player.x + REVIVE_CLEAR_AHEAD);
+                               p.x > player.x + safe);
 
   // 先试「站到挡路那块台子顶上」；不行再退回原来的做法（站回脚下那层地面）
   const placed = tryReviveOnPlatform();
@@ -200,6 +204,11 @@ function revive() {
   // 复活时清掉挡路记录，免得下次复活又用同一块
   blockedPlatform = null;
   blockedSeg      = null;
+
+  /* ★ 安全区一过就必须有东西。
+     只清不补的话，如果正好清在「奖励时间」那片平地上，
+     前方能一路空到大几百像素 —— 看起来就像关卡不生了。 */
+  ensureSomethingAhead(safe);
 
   invTimer = INVULN_TIME;
   state    = 'playing';

@@ -284,6 +284,48 @@ function recycle() {
 }
 
 /* =========================================================
+   复活兜底：保证「安全区」外面马上有东西
+   ---------------------------------------------------------
+   复活时会清掉前方一段障碍（安全区），免得一站起来就撞死。
+   问题是如果正好清在「奖励时间」那片平地上，前方会一路空下去，
+   看起来就像关卡不生成东西了（用户反馈的「一望无际的大平地」）。
+
+   所以这里做一次硬保证：安全区之外 REVIVE_ENSURE_WITHIN 像素内
+   如果既没有障碍也没有坑，就当场补一排藤壶。
+   ========================================================= */
+function ensureSomethingAhead(safeDist) {
+  const from  = player.x;
+  const limit = from + safeDist + REVIVE_ENSURE_WITHIN;
+
+  for (const o of obstacles) {
+    const ow = (o.w !== undefined) ? o.w : (o.r * 2);
+    if (o.x + ow > from && o.x < limit) return;   // 前方已经有东西了
+  }
+  for (const p of pits) {
+    if (p.x + p.w > from && p.x < limit) return;
+  }
+
+  // 找一段能站人的地面（跳过坑洞），最多试几个位置
+  let x = from + safeDist + 40;
+  let gy = Infinity;
+  for (let i = 0; i < 5; i++) {
+    gy = groundYAt(x);
+    if (isFinite(gy)) break;
+    x += 90;
+  }
+  if (!isFinite(gy)) return;                      // 实在找不到落脚点就算了
+
+  const d    = BARN_R * 2;
+  const step = d + BARN_GAP;
+  for (let i = 0; i < 2; i++) {
+    obstacles.push({
+      t: 'barn', x: x + i * step, w: d, h: d, r: BARN_R,
+      baseY: gy, v: Math.floor(Math.random() * 5) + 1,
+    });
+  }
+}
+
+/* =========================================================
    地面高度 / 平台侧壁推回
    ========================================================= */
 function groundYAt(x) {

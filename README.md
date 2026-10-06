@@ -91,7 +91,7 @@ js/
   15_main.js            draw() 总入口 + 主循环 + 怪物逻辑 + 启动
   16_shop.js            商店、购买、白饭胜利界面、开场菜单
 audio/
-  dfy1~dfy4.mp3         背景音乐（随机循环）
+  bgm.m4a         背景音乐（单曲循环，来自《藤壶的入侵》）
   victory.mp3           买到白饭时的胜利音效
 鲸鲸酷跑_素材/          图片素材
 ```
@@ -118,7 +118,9 @@ audio/
 | 铁盆位置与大小 | `POT_WIDTH_RATIO` `POT_Y` `POT_BOTTOM_CLIP_Y` |
 | 滑铲压扁程度 | `DUCK_SCALE` `DUCK_SQUASH` `DUCK_W_RATIO` |
 | 背景音乐音量 | `js/00_audio.js` 的 `BGM_VOLUME`，或直接在游戏里拖滑块 |
+| **换背景音乐** | 新文件放进 `audio/`，改 `js/00_audio.js` 的 `BGM_LIST`（单曲循环） |
 | 广告图 / 广告链接 | `js/03_assets.js` 的 `AD_IMAGES` / `AD_LINKS` |
+| **复活后的安全距离 / 无敌时长** | `REVIVE_SAFE_FRAMES`（按时间算）`INVULN_TIME` |
 
 ### 换美术
 

@@ -91,7 +91,12 @@ function update(dt) {
     }
   } else if (coinSeaPhase === 'active') {
     coinSeaTimer -= dt;
-    if (coinSeaTimer <= 0) {
+    /* ★ 阵列放完（coinSeaLeft 归零）就立刻结束奖励时间。
+       以前要等满 4 / 7 / 10 秒，可阵列早就放完了 ——
+       后面那几秒是一整片既没有障碍、也没有鲸元券的平地，
+       把「奖励时间」拖成了「关卡停了」。
+       奖励的鲸元券数量没变，只是不再白送一段空跑。 */
+    if (coinSeaTimer <= 0 || coinSeaLeft <= 0) {
       coinSeaPhase = 'none';
       nextCoinSeaScore += COIN_SEA_TRIGGER_STEP;
     }

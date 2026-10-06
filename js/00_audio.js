@@ -46,32 +46,36 @@ function toggleMute() {
 }
 
 /* =========================================================
-   背景音乐：四首随机循环
+   背景音乐：单曲循环
    ---------------------------------------------------------
-   · 页面一进来就先选一首随机播；放完自动换下一首（换的时候避免和上一首重复）
-   · 「随机」但不会连着两次同一首
+   · 就一首（沿用《藤壶的入侵》那首 bgm），从头放到尾接着放
    · 浏览器不许自动出声，所以第一次点击/按键时（audioUnlock）才真的响
    · 音量走 BGM_VOLUME，比音效轻
+
+   ★ 形式是 .m4a（AAC）：iOS / Android / 各浏览器的原生格式，
+     同一首曲子比 MP3 小一半（现在 2 分 07 秒只要 1MB）。
+     想换曲子：把新文件放进 audio 目录，改下面这一行就行。
+     （注意别在注释里写出带斜杠的路径 —— 打包脚本抓引用时会看花眼。）
    ========================================================= */
-const BGM_LIST = ['audio/dfy1.mp3', 'audio/dfy2.mp3', 'audio/dfy3.mp3', 'audio/dfy4.mp3'];
+const BGM_LIST = ['audio/bgm.m4a'];
 
 let bgmEl       = null;
 let bgmIdx      = -1;
 let bgmStarted  = false;
 
-function bgmPickNext() {
-  if (BGM_LIST.length === 1) return 0;
-  let i;
-  do { i = Math.floor(Math.random() * BGM_LIST.length); } while (i === bgmIdx);
-  return i;
-}
-
 function bgmPlay() {
   if (!bgmEl) return;
-  bgmIdx = bgmPickNext();
-  bgmEl.src = BGM_LIST[bgmIdx];
+
+  /* ★ src 只在第一次设。
+     设了 loop = true 之后再重设 src，会把音乐从头拽回去 ——
+     那样就永远停在开头几秒，听着像卡带。 */
+  if (bgmIdx < 0) {
+    bgmIdx = 0;
+    bgmEl.src = BGM_LIST[bgmIdx];
+  }
+
   bgmEl.volume = BGM_VOLUME;
-  bgmEl.muted = muted;
+  bgmEl.muted  = muted;
   const p = bgmEl.play();
   if (p && p.catch) p.catch(() => { /* 还没解锁，等 audioUnlock 再拉起来 */ });
 }
@@ -79,12 +83,10 @@ function bgmPlay() {
 function bgmInit() {
   if (bgmEl) return;
   bgmEl = new Audio();
-  bgmEl.loop = false;                 // 一首放完换下一首，所以不 loop
+  bgmEl.loop    = true;               // 单曲循环
   bgmEl.preload = 'auto';
-  bgmEl.addEventListener('ended', bgmPlay);
   bgmEl.addEventListener('error', () => {
-    // 某个文件坏了就跳过它，别卡住
-    setTimeout(bgmPlay, 1500);
+    console.warn('[BGM] 加载失败：' + BGM_LIST[bgmIdx >= 0 ? bgmIdx : 0]);
   });
   bgmPlay();
 }
