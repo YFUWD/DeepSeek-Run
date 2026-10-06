@@ -244,6 +244,32 @@ const PRICE_POT  = 25;
 const PRICE_RICE = 300;
 
 /* =========================================================
+   访问统计（abacus）
+   ---------------------------------------------------------
+   纯静态站没有后端，用第三方计数器。命名规则：namespace 和 key
+   都要匹配 ^[A-Za-z0-9_\-.]{3,64}$（至少 3 个字符）。
+   换服务 / 换计数器只改这几行，具体实现见 js/17_visit.js。
+
+   ★ admin_key（能改数字的钥匙）存在游戏目录【外面】：
+        C:\Users\YFIWD\DeepSeek Workshop\访问统计_管理密钥.txt
+     千万别提交进仓库，也别提交进这个目录。
+   ========================================================= */
+const VISIT_API = 'https://abacus.jasoncameron.dev';
+const VISIT_NS  = 'yfuwd-whale';   // 命名空间（约定用站点/项目名）
+const VISIT_KEY = 'visits';        // 累计访问
+const CLEAR_KEY = 'clears';        // 通关人数（买到白饭）
+
+/* 端点拼法见 abacus 文档：/hit 自增、/get 只读 */
+const VISIT_HIT = `${VISIT_API}/hit/${VISIT_NS}/${VISIT_KEY}`;
+const VISIT_GET = `${VISIT_API}/get/${VISIT_NS}/${VISIT_KEY}`;
+const CLEAR_HIT = `${VISIT_API}/hit/${VISIT_NS}/${CLEAR_KEY}`;
+const CLEAR_GET = `${VISIT_API}/get/${VISIT_NS}/${CLEAR_KEY}`;
+
+/* 同一个标签页会话只 +1 一次，按 F5 不会把数字刷上去 */
+const VISIT_LS_KEY = 'whale_visit_counted_v1';
+const CLEAR_LS_KEY = 'whale_clear_counted_v1';
+
+/* =========================================================
    怪物子弹的粉红色外圈
    ========================================================= */
 const BULLET_RING_COLOR = '#ff6ec7';   // 粉色描边
